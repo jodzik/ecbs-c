@@ -38,6 +38,11 @@ enum {
 
 enum {
     // ADDR(1) + PD(1) + SIGNAL(2) + NFILL(1) + SEQ(1)
+    PACKET_ADDR_INDEX = 0,
+    PACKET_PD_INDEX = 1,
+    PACKET_SIGNAL_INDEX = 2,
+    PACKET_NFILL_INDEX = 4,
+    PACKET_SEQ_INDEX = 5,
     PACKET_DATA_POS = 6,
 
     NO_SIGNAL = -1,
@@ -119,6 +124,15 @@ static int make_packet(
 /// @param ecbs self
 /// @param ndata count of already inserted to 'buf_to_make' buffer.
 static void encode_packet_and_send_as_frame(struct Ecbs* const ecbs, uint16_t ndata) {
+#if ECBS_DEBUG_EN
+    uint8_t const* const packet = framer7b__get_packet_buf_to_make(&ecbs->framer);
+    ECBS_DBG_PRINTF("Send packet: addr=%u pd=%02X sig=%u seq=%u ndata=%u.", packet[PACKET_ADDR_INDEX],
+        packet[PACKET_PD_INDEX], u16_from_be(&packet[PACKET_SIGNAL_INDEX]), packet[PACKET_SEQ_INDEX], ndata);
+#endif
+
+    if (ECBS_STATE__SEND == ecbs->state) {
+        WRN_LOG("Send packet initiated while a previous packet is still not sended.");
+    }
     ecbs->nsend = (uint16_t)framer7b__make(&ecbs->framer, ndata);
     ecbs->ptr = 0;
     ecbs->state = ECBS_STATE__SEND;
