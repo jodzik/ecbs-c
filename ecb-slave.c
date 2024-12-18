@@ -668,6 +668,12 @@ int ecbs__add_sig(
     int (*write)(uint16_t sig, const uint8_t* data, uint16_t ndata))
 {
     for (uint16_t i = 0; i < ECBS__MAX_SIG; i++) {
+        if (sig == ecbs->sig[i].sig) {
+            return ER_ALREADY;
+        }
+    }
+
+    for (uint16_t i = 0; i < ECBS__MAX_SIG; i++) {
         if (NO_SIGNAL == ecbs->sig[i].sig) {
             ecbs->sig[i].sig = sig;
             ecbs->sig[i].read = read;
@@ -679,7 +685,8 @@ int ecbs__add_sig(
             return 0;
         }
     }
-    return -1;
+
+    return ER_NO_MEM;
 }
 
 int ecbs__allow_stream_at_sig(struct Ecbs* const ecbs, uint16_t const sig, uint8_t const stream_pub_period_ms) {
