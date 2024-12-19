@@ -167,7 +167,7 @@ static int send_stream_data(struct Ecbs* const ecbs) {
     struct EcbsSig* const signal = &ecbs->sig[ecbs->stream_sig];
     bool const is_enc_needed = ECBS_PROTECT_LEVEL__NO != signal->protect_level;
     uint8_t* const buf = framer7b__get_packet_buf_to_make(&ecbs->framer);
-    int const rc = signal->read(signal->sig, &buf[PACKET_DATA_POS]);
+    int const rc = signal->read((uint16_t)signal->sig, &buf[PACKET_DATA_POS]);
     if (rc >= 0) {
         uint16_t packet_size = 0;
         ASSERTf(rc <= ECBS__MAX_DATA_SIZE, ER_INVAL,
@@ -205,7 +205,7 @@ static int handle_read_request(struct Ecbs* const ecbs, struct Packet const* pac
         return 0;
     }
     uint8_t* const buf = framer7b__get_packet_buf_to_make(&ecbs->framer);
-    int const rc = sig->read(sig->sig, &buf[PACKET_DATA_POS]);
+    int const rc = sig->read((uint16_t)sig->sig, &buf[PACKET_DATA_POS]);
     if (rc >= 0) {
         uint16_t packet_size = 0;
         ASSERTf(rc <= ECBS__MAX_DATA_SIZE, ER_INVAL, "Fail to handle read request: read data too big - %i", rc);
@@ -245,7 +245,7 @@ static int handle_write_request(struct Ecbs* const ecbs, struct Packet const* pa
         return 0;
     }
 
-    int const rc = sig->write(sig->sig, packet->data, packet->ndata);
+    int const rc = sig->write((uint16_t)sig->sig, packet->data, packet->ndata);
     if (0 == rc) {
         uint16_t packet_size = 0;
         TRY(make_packet(ecbs, is_enc, ECBS__PD_TYPE_WRITE, (uint16_t)sig->sig, packet->seq, 0, &packet_size));
@@ -278,7 +278,7 @@ static int handle_write_no_answ_request(struct Ecbs* const ecbs, struct Packet c
         return 0;
     }
 
-    rc = sig->write(sig->sig, packet->data, packet->ndata);
+    rc = sig->write((uint16_t)sig->sig, packet->data, packet->ndata);
     if (rc) {
         ECBS_DBG_PRINTF("Fail to write signal %u: user error: %i", packet->signal, rc);
     }
@@ -351,7 +351,7 @@ static int handle_write_with_auth_request(struct Ecbs* const ecbs, struct Packet
         send_err(ecbs, packet->signal, true, packet->seq, ECBS_ERR__INCORRECT_SIGN, 0);
         return 0;
     }
-    int const rc = sig->write(sig->sig, &packet->data[sizeof(uint64_t)], packet->ndata - sizeof(uint64_t));
+    int const rc = sig->write((uint16_t)sig->sig, &packet->data[sizeof(uint64_t)], packet->ndata - sizeof(uint64_t));
     if (0 == rc) {
         uint16_t packet_size = 0;
         TRY(make_packet(ecbs, true, ECBS__PD_TYPE_WRITE_WITH_AUTH, (uint16_t)sig->sig, packet->seq, 0, &packet_size));
