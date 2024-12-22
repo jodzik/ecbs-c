@@ -547,6 +547,10 @@ int ecbs__init(
     bool (*read)(uint8_t* byte),
     bool (*write)(uint8_t data))
 {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != get_time_ms, ER_INVAL);
+    ASSERT(NULL != read, ER_INVAL);
+
     memset(ecbs, 0, sizeof(*ecbs));
     ecbs->addr = addr;
     ecbs->is_enc_init = false;
@@ -577,37 +581,47 @@ int ecbs__init_write_buf(
     bool (*write_buf)(uint8_t const* data, uint16_t ndata),
     bool (*get_write_state)(void))
 {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != write_buf, ER_INVAL);
+    ASSERT(NULL != get_write_state, ER_INVAL);
     ecbs->write_buf = write_buf;
     ecbs->get_write_state = get_write_state;
     return 0;
 }
 
 int ecbs__init_enc(struct Ecbs* const ecbs, const uint8_t auth_key[16], uint32_t (*get_rand)(void)) {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != auth_key, ER_INVAL);
+    ASSERT(NULL != get_rand, ER_INVAL);
     memcpy(ecbs->auth_key, auth_key, sizeof(ecbs->auth_key));
     ecbs->get_rand = get_rand;
     ecbs->is_enc_init = true;
     return 0;
 }
 
-void ecbs__drop_enc_session(struct Ecbs* const ecbs) {
+int ecbs__drop_enc_session(struct Ecbs* const ecbs) {
+    ASSERT(NULL != ecbs, ER_INVAL);
     ecbs->is_enc_session = false;
+    return 0;
 }
 
 int ecbs__announce(struct Ecbs* const ecbs) {
+    ASSERT(NULL != ecbs, ER_INVAL);
     uint16_t packet_size = 0;
     TRY(make_packet(ecbs, false, ECBS__PD_TYPE_WRITE, ECBS_SIG__RESET, 0, 0, &packet_size));
     encode_packet_and_send_as_frame(ecbs, packet_size);
     return 0;
 }
 
-void ecbs__loop(struct Ecbs* const ecbs) {
-    static uint8_t buf = 0;
+int ecbs__loop(struct Ecbs* const ecbs) {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    uint8_t buf = 0;
     if (ECBS_STATE__RECEIVE == ecbs->state) {
         while (ecbs->read(&buf)) {
             ecbs->tl_read = ecbs->get_time_ms();
             int const framer_result = framer7b__push(&ecbs->framer, buf);
             if (framer_result > 0) {
-                handle_packet(ecbs, framer_result);
+                TRY_PASS(handle_packet(ecbs, framer_result));
                 break;
             }
         }
@@ -618,7 +632,7 @@ void ecbs__loop(struct Ecbs* const ecbs) {
             bool const is_time_to_send = IS_TIME_EXPIRED_EX(tl_pub_ms, pub_period_ms, time_ms);
             bool const is_allowed = IS_TIME_EXPIRED_EX(ecbs->tl_read, ECBS__ALLOW_SEND_STREAM_AFTER_RECV_MS, time_ms);
             if (is_time_to_send && is_allowed) {
-                send_stream_data(ecbs);
+                TRY_PASS(send_stream_data(ecbs));
             }
         }
     }
@@ -642,6 +656,8 @@ void ecbs__loop(struct Ecbs* const ecbs) {
             }
         }
     }
+
+    return 0;
 }
 
 /// @brief Добавить обработчик сигнала.
@@ -667,11 +683,9 @@ int ecbs__add_sig(
     int (*read)(uint16_t sig, uint8_t* buf),
     int (*write)(uint16_t sig, const uint8_t* data, uint16_t ndata))
 {
-    for (uint16_t i = 0; i < ECBS__MAX_SIG; i++) {
-        if (sig == ecbs->sig[i].sig) {
-            return ER_ALREADY;
-        }
-    }
+    ASSERT(NULL != ecbs, ER_INVAL);
+    struct EcbsSig const* const sigd = find_sig(ecbs, sig);
+    ASSERT(NULL == sigd, ER_ALREADY);
 
     for (uint16_t i = 0; i < ECBS__MAX_SIG; i++) {
         if (NO_SIGNAL == ecbs->sig[i].sig) {
@@ -690,36 +704,40 @@ int ecbs__add_sig(
 }
 
 int ecbs__allow_stream_at_sig(struct Ecbs* const ecbs, uint16_t const sig, uint8_t const stream_pub_period_ms) {
+    ASSERT(NULL != ecbs, ER_INVAL);
     struct EcbsSig* const sigd = find_sig(ecbs, sig);
-    if (NULL == sigd) {
-        return ER_NO_ENT;
-    }
-    if (NULL == sigd->read) {
-        return ER_NOT_PERM;
-    }
+    ASSERT(NULL != sigd, ER_NO_ENT);
+    ASSERT(NULL != sigd, ER_NOT_PERM);
     sigd->is_stream_allowed = true;
     sigd->stream_pub_period_ms = stream_pub_period_ms;
     return 0;
 }
 
 int ecbs__force_pub_stream_at_sig(struct Ecbs* const ecbs, uint16_t const sig) {
+    ASSERT(NULL != ecbs, ER_INVAL);
     struct EcbsSig* const sigd = find_sig(ecbs, sig);
-    if (NULL == sigd) {
-        return -1;
-    }
+    ASSERT(NULL != sigd, ER_NO_ENT);
     sigd->tl_stream_pub_ms = 0;
     return 0;
 }
 
-bool ecbs__is_streaming(struct Ecbs const* const ecbs) {
-    return ecbs->stream_sig != NO_SIGNAL;
+int ecbs__is_streaming(struct Ecbs const* const ecbs, bool* const result) {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != result, ER_INVAL);
+    *result = ecbs->stream_sig != NO_SIGNAL;
+    return 0;
 }
 
-uint32_t ecbs__get_tl_master_activity(struct Ecbs const* ecbs) {
-    return ecbs->tl_master_activity;
+int ecbs__get_tl_master_activity(struct Ecbs const* ecbs, uint32_t* const result) {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != result, ER_INVAL);
+    *result = ecbs->tl_master_activity;
+    return 0;
 }
 
-void ecbs__add_err_description(struct Ecbs* const ecbs, char const* const fmt, ...) {
+int ecbs__add_err_description(struct Ecbs* const ecbs, char const* const fmt, ...) {
+    ASSERT(NULL != ecbs, ER_INVAL);
+    ASSERT(NULL != fmt, ER_INVAL);
     va_list args = {0};
     va_start(args, fmt);
     uint8_t* const buf = framer7b__get_packet_buf_to_make(&ecbs->framer);
@@ -728,4 +746,5 @@ void ecbs__add_err_description(struct Ecbs* const ecbs, char const* const fmt, .
     if (rc > 0) {
         ecbs->err_description_size = (uint16_t)rc;
     }
+    return 0;
 }

@@ -145,7 +145,7 @@ int ecbs__init_write_buf(
     bool (*write_buf)(uint8_t const* data, uint16_t ndata),
     bool (*get_write_state)(void));
 
-void ecbs__drop_enc_session(struct Ecbs* ecbs);
+int ecbs__drop_enc_session(struct Ecbs* ecbs);
 
 int ecbs__announce(struct Ecbs* ecbs);
 
@@ -158,13 +158,13 @@ int ecbs__add_sig(
 
 int ecbs__allow_stream_at_sig(struct Ecbs* ecbs, uint16_t sig, uint8_t stream_pub_period_ms);
 int ecbs__force_pub_stream_at_sig(struct Ecbs* ecbs, uint16_t sig);
-bool ecbs__is_streaming(struct Ecbs const* ecbs);
+int ecbs__is_streaming(struct Ecbs const* ecbs, bool* result);
 
-uint32_t ecbs__get_tl_master_activity(struct Ecbs const* ecbs);
+int ecbs__get_tl_master_activity(struct Ecbs const* ecbs, uint32_t* result);
 
-void ecbs__add_err_description(struct Ecbs* ecbs, char const* const fmt, ...);
+int ecbs__add_err_description(struct Ecbs* ecbs, char const* const fmt, ...);
 
-void ecbs__loop(struct Ecbs* ecbs);
+int ecbs__loop(struct Ecbs* ecbs);
 
 #ifdef __cplusplus
 }
