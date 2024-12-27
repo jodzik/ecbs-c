@@ -47,7 +47,6 @@ enum {
     ECBS_SIG__RESET = 0,
     ECBS_SIG__INFO = 1,
     ECBS_SIG__ADDR = 2,
-    ECBS_SIG__PLATFORM_NAME = 12,
     ECBS_SIG__SERIAL = 13,
     ECBS_SIG__AUTH_KEY = 14,
     ECBS_SIG__PICK = 15,
@@ -74,7 +73,6 @@ enum {
     ECBS_TLV__FW_KEY = 12,       // [u8;#RAIDEN__KEY_SIZE]
     ECBS_TLV__ADDR = 13,         // u8
     ECBS_TLV__IS_SERIAL_PERMANENT = 14, // bool
-    ECBS_TLV__IS_PLATFORM_NAME_PERMANENT = 15, // bool
 };
 
 typedef enum EcbsErr {
