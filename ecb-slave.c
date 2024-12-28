@@ -427,7 +427,7 @@ static int handle_enc_open_request(struct Ecbs* const ecbs, struct Packet const*
         u16_to_be(&ecbs->session_key[i], (uint16_t)rand());
     }
     TRY(raiden_encode(ecbs->auth_key, ecbs->session_key, &buf[PACKET_DATA_POS], RAIDEN__KEY_SIZE));
-    TRY(make_packet(ecbs, false, ECBS__PD_TYPE_ENC_OPEN, 0, 0, RAIDEN__KEY_SIZE, &packet_size));
+    TRY(make_packet(ecbs, false, ECBS__PD_TYPE_ENC_OPEN, 0, packet->seq, RAIDEN__KEY_SIZE, &packet_size));
     encode_packet_and_send_as_frame(ecbs, packet_size);
     ecbs->is_enc_session = true;
 
