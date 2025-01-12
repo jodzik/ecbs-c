@@ -47,6 +47,7 @@ enum {
     ECBS_SIG__RESET = 0,
     ECBS_SIG__INFO = 1,
     ECBS_SIG__ADDR = 2,
+	ECBS_SIG__LOG = 4,
     ECBS_SIG__SERIAL = 13,
     ECBS_SIG__AUTH_KEY = 14,
     ECBS_SIG__PICK = 15,
@@ -66,7 +67,8 @@ enum {
     ECBS_TLV__TEST_PHRASE = 4,  // String
     ECBS_TLV__FW_SIZE = 5,      // u32
     ECBS_TLV__FW_CRC32 = 6,      // u32
-    ECBS_TLV__PLATFORM_NAME = 8, // String
+	ECBS_TLV__FW_CRC32_REAL = 7, // u32
+	ECBS_TLV__PLATFORM_NAME = 8, // String
     ECBS_TLV__BOARD_REVISION = 9, // u16
     ECBS_TLV__DEVICE_ID = 10,    // [u8;16]
     ECBS_TLV__AUTH_KEY = 11,     // [u8;#RAIDEN__KEY_SIZE]
