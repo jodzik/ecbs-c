@@ -37,7 +37,7 @@ void ecbs_applvl__log(char const* const str) {
 		if (len > g_log_buf_size) {
 			len = g_log_buf_size;
 		}
-		if (len > (g_log_buf_size - g_log_buf_real_size)) {
+		if (len > (size_t)(g_log_buf_size - g_log_buf_real_size)) {
 			g_log_buf_real_size = 0;
 		}
 		memcpy(&g_log_buf[g_log_buf_real_size], str, len);
