@@ -38,7 +38,7 @@ enum {
     ECBS__MAX_DATA_SIZE = (int)FRAMER7B__DATA_SIZE - (int)ECBS__MIN_PACKET_SIZE,
     ECBS__DEVICE_ID_SIZE = 16,
     ECBS__APP_NAME_SIZE = 32,
-    ECBS__SERIAL_SIZE = 32,
+    ECBS__SERIAL_SIZE = 64,
     ECBS__PLATFORM_NAME_SIZE = 32,
     ECBS__APP_VERSION_SIZE = 3,
 };
@@ -54,7 +54,7 @@ enum {
     
     ECBS_SIG_BOOT__BEGIN = 16,
     ECBS_SIG_BOOT__END = 17,
-    ECBS_SIG_BOOT__FW_KEY = 19,
+    ECBS_SIG_BOOT__FW_KEY = 19,		// [bool(is_permanent);#RAIDEN__KEY_SIZE]
     ECBS_SIG_BOOT__WRITE = 20,
     ECBS_SIG_BOOT__APP_INFO = 22,
     ECBS_SIG_BOOT__GO_APP = 23,
@@ -75,6 +75,7 @@ enum {
     ECBS_TLV__FW_KEY = 12,       // [u8;#RAIDEN__KEY_SIZE]
     ECBS_TLV__ADDR = 13,         // u8
     ECBS_TLV__IS_SERIAL_PERMANENT = 14, // bool
+	ECBS_TLV__IS_FW_KEY_PERMANENT = 15, // bool
 };
 
 typedef enum EcbsErr {
