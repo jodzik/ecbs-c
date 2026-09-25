@@ -11,9 +11,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+// used just for identify retry from master  
 typedef struct EcbsRequestToken {
     uint8_t pd; // request packet descriptor
-    uint8_t addr; // request destination addr
     uint32_t crc32; // CRC32 of the request packet
 } EcbsRequestToken;
 
@@ -22,9 +22,13 @@ typedef uint8_t EcbsAddr;
 
 /** Endpoint read callback, see #ecbs__register_endpoint for the contract. */
 typedef int (*EcbsEndpointRead)(EcbsDataId id, EcbsRequestToken token, void* user_data);
-/** Endpoint write callback, see #ecbs__register_endpoint for the contract. */
-typedef int (*EcbsEndpointWrite)(EcbsDataId id, EcbsRequestToken token, const uint8_t* data, uint16_t data_size,
-    void* user_data);
+/** Endpoint write callback, see #ecbs__register_endpoint for the contract.
+ *
+ * @param[in] is_answer_needed true for the WRITE request - the answer contract applies,
+ *                             false for WRITE_NO_ANSW - the answer functions must not be called.
+ */
+typedef int (*EcbsEndpointWrite)(EcbsDataId id, EcbsRequestToken token, bool is_answer_needed,
+    const uint8_t* data, uint16_t data_size, void* user_data);
 
 enum {
     ECBS__BROADCAST_ADDR = 0xFF,
@@ -133,6 +137,8 @@ int ecbs__announce(struct Ecbs* ecbs) __nonnull((1));
  *   or ecbs__send_app_error_answer() later(within timeout_ms), inside or outside the callback;
  * - return < 0 and no answer queued inside the callback - the library immediately sends
  *   APP_ERR answer with error_code = (uint8_t)(-return_code) and empty description.
+ * - write callback with is_answer_needed == false(WRITE_NO_ANSW request) - no answer
+ *   is sent at all, the return code is only logged.
  *
  * @param[in] timeout_ms - max time to prepare the answer for this endpoint, cannot be zero,
  *                          should be slightly less than the master side timeout.

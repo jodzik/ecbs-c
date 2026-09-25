@@ -55,7 +55,7 @@ static bool _is_broadcast_addr(EcbsAddr const addr) {
 }
 
 static bool _is_token_equal(EcbsRequestToken const a, EcbsRequestToken const b) {
-    return (a.pd == b.pd) && (a.addr == b.addr) && (a.crc32 == b.crc32);
+    return (a.pd == b.pd) && (a.crc32 == b.crc32);
 }
 
 static struct EcbsEndpoint* _find_endpoint(struct Ecbs* const ecbs, EcbsDataId const data_id) {
@@ -212,7 +212,7 @@ static int _handle_read_write(struct Ecbs* const ecbs, struct EcbsPacketView con
         cb_rc = ep->read(req->data_id, req->token, ep->user_data);
     }
     else {
-        cb_rc = ep->write(req->data_id, req->token, req->payload, req->payload_size, ep->user_data);
+        cb_rc = ep->write(req->data_id, req->token, true, req->payload, req->payload_size, ep->user_data);
     }
 
     if (ECBS_STATE__SEND == ecbs->state) {
@@ -252,7 +252,7 @@ static int _handle_write_no_answer(struct Ecbs* const ecbs, struct EcbsPacketVie
         goto finally;
     }
 
-    int const cb_rc = ep->write(req->data_id, req->token, req->payload, req->payload_size, ep->user_data);
+    int const cb_rc = ep->write(req->data_id, req->token, false, req->payload, req->payload_size, ep->user_data);
     if (0 != cb_rc) {
         LOG_DBGf("WRITE_NO_ANSW endpoint callback failed: data_id=%u rc=%i", req->data_id, cb_rc);
     }
@@ -297,7 +297,6 @@ static int _handle_frame(struct Ecbs* const ecbs, uint16_t const size, uint64_t 
     struct EcbsPacketView const req = {
         .token = {
             .pd = pd,
-            .addr = addr,
             .crc32 = crc_recv,
         },
         .tid = u16_from_le(&buf[ECBS__PACKET_TID_POS]),

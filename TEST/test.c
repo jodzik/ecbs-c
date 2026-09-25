@@ -75,6 +75,7 @@ static int g_write_status_proceeds_left;
 
 static int g_read_calls;
 static int g_write_calls;
+static bool g_write_answer_needed;
 static EcbsRequestToken g_last_token;
 static EcbsDataId g_last_id;
 static uint8_t g_write_payload[ECBS__MAX_PAYLOAD_SIZE];
@@ -146,17 +147,18 @@ static int mock_read_cb(EcbsDataId const id, EcbsRequestToken const token, void*
     return g_ep_rc;
 }
 
-static int mock_write_cb(EcbsDataId const id, EcbsRequestToken const token, uint8_t const* const data,
-    uint16_t const data_size, void* const user_data) {
+static int mock_write_cb(EcbsDataId const id, EcbsRequestToken const token, bool const is_answer_needed,
+    uint8_t const* const data, uint16_t const data_size, void* const user_data) {
     UNUSED(user_data);
     g_write_calls += 1;
     g_last_token = token;
     g_last_id = id;
+    g_write_answer_needed = is_answer_needed;
     g_write_payload_size = data_size;
     if ((NULL != data) && (0 < data_size)) {
         memcpy(g_write_payload, data, data_size);
     }
-    if (1 == g_ep_mode) {
+    if (is_answer_needed && (1 == g_ep_mode)) {
         return ecbs__send_write_answer(&g_ecbs, token);
     }
     return g_ep_rc;
@@ -172,6 +174,7 @@ static void reset_mocks(void) {
     g_write_status_proceeds_left = 0;
     g_read_calls = 0;
     g_write_calls = 0;
+    g_write_answer_needed = false;
     memset(&g_last_token, 0, sizeof(g_last_token));
     g_last_id = 0;
     g_write_payload_size = 0;
@@ -431,6 +434,7 @@ static int test_write_answer(void) {
 
     CHECK(1 == g_write_calls);
     CHECK(TEST__EP_DATA_ID == g_last_id);
+    CHECK(true == g_write_answer_needed);
     CHECK(2 == g_write_payload_size);
     CHECK(0 == memcmp(g_write_payload, data, sizeof(data)));
     CHECK(ECBS_STATE__WAIT_ANSWER == g_ecbs.state);
@@ -457,6 +461,7 @@ static int test_write_no_answer_unicast(void) {
     CHECK(0 == process_all());
 
     CHECK(1 == g_write_calls);
+    CHECK(false == g_write_answer_needed);
     CHECK(2 == g_write_payload_size);
     CHECK(0 == memcmp(g_write_payload, data, sizeof(data)));
     CHECK(0 == g_tx_len);
@@ -478,7 +483,7 @@ static int test_broadcast(void) {
     CHECK(0 == process_all());
 
     CHECK(1 == g_write_calls);
-    CHECK(ECBS__BROADCAST_ADDR == g_last_token.addr);
+    CHECK(false == g_write_answer_needed);
     CHECK(0 == g_tx_len);
 
     // READ to broadcast is dropped.
@@ -776,7 +781,6 @@ static int test_wrong_token_and_oversize(void) {
 
     EcbsRequestToken const wrong_token = {
         .pd = g_last_token.pd,
-        .addr = g_last_token.addr,
         .crc32 = g_last_token.crc32 ^ 0xFFFF,
     };
     uint8_t const data[1] = {1};
@@ -790,7 +794,6 @@ static int test_wrong_token_and_oversize(void) {
     // WRITE token cannot be answered by the read answer function.
     EcbsRequestToken const write_token = {
         .pd = g_last_token.pd ^ TEST__PD_TYPE_READ,
-        .addr = g_last_token.addr,
         .crc32 = g_last_token.crc32,
     };
     CHECK(ER_INVAL == ecbs__send_read_answer(&g_ecbs, write_token, data, sizeof(data)));
